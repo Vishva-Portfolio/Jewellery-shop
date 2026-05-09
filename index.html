@@ -190,15 +190,18 @@
   }
   .wish-enquire-btn {
     width: 100%; padding: 13px;
-    background: linear-gradient(135deg, rgba(201,168,76,0.25), rgba(201,168,76,0.10));
-    color: #F0D88A; border: 1px solid rgba(201,168,76,0.5); cursor: pointer;
+    background: linear-gradient(135deg, rgba(37,211,102,0.22), rgba(18,140,126,0.14));
+    color: #4ade80; border: 1px solid rgba(37,211,102,0.4); cursor: pointer;
     font-family: 'Jost', sans-serif; font-size: 0.72rem; letter-spacing: 0.2em;
     text-transform: uppercase; border-radius: 4px;
     backdrop-filter: blur(12px); transition: all 0.3s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
   }
   .wish-enquire-btn:hover {
-    background: linear-gradient(135deg, rgba(201,168,76,0.4), rgba(201,168,76,0.2));
-    box-shadow: 0 4px 20px rgba(201,168,76,0.2);
+    background: linear-gradient(135deg, rgba(37,211,102,0.38), rgba(18,140,126,0.28));
+    border-color: rgba(37,211,102,0.65);
+    box-shadow: 0 4px 20px rgba(37,211,102,0.2);
+    color: #6effa0;
   }
   .wish-count-label { font-size: 0.68rem; color: var(--muted); text-align: center; margin-bottom: 10px; letter-spacing: 0.1em; }
 
@@ -389,20 +392,33 @@
   .tab-btn:hover { color: var(--gold); }
   .tab-btn.active { color: var(--gold-deep); border-bottom-color: var(--gold); }
   .products-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 2rem; }
-  .product-card { cursor: pointer; }
-  .product-img {
-    width: 100%; aspect-ratio: 1; background: var(--surface-2); border-radius: 3px;
-    display: flex; align-items: center; justify-content: center; overflow: hidden;
-    position: relative; margin-bottom: 1rem; transition: box-shadow 0.3s;
-    border: 1px solid rgba(201,168,76,0.08);
+
+  /* ===== PRODUCT CARD — Full-image overlay style (like collection cards) ===== */
+  .product-card {
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    border-radius: 3px;
+    background: var(--surface-2);
+    border: none;
+    box-shadow: none;
+    transition: transform 0.4s ease, box-shadow 0.4s ease;
   }
-  .product-card:hover .product-img { box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(201,168,76,0.2); }
-  .product-img img { width: 100%; height: 100%; object-fit: cover; }
-  .product-img-inner { transition: transform 0.4s ease; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
-  .product-img-inner img { width: 100%; height: 100%; object-fit: cover; }
-  .product-card:hover .product-img-inner { transform: scale(1.05); }
+  .product-card::before { display: none; }
+  .product-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.6);
+  }
+  .product-img {
+    width: 100%; aspect-ratio: 3/4; background: var(--surface-3);
+    overflow: hidden; position: relative; border-bottom: none;
+  }
+  .product-img-inner { position: absolute; inset: 0; transition: transform 0.5s ease; }
+  .product-img-inner img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
+  .product-img-inner svg { width: 100%; height: 100%; display: block; }
+  .product-card:hover .product-img-inner { transform: scale(1.04); }
   .product-wish {
-    position: absolute; top: 10px; right: 10px;
+    position: absolute; top: 10px; right: 10px; z-index: 3;
     background: rgba(20,16,10,0.65); border: 1px solid rgba(201,168,76,0.25);
     width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
     font-size: 1rem; cursor: pointer; opacity: 0; transition: opacity 0.3s, transform 0.2s, background 0.3s, border-color 0.3s;
@@ -426,9 +442,31 @@
     70%  { transform: scale(0.88); }
     100% { transform: scale(1); }
   }
-  .product-name { font-family: 'Cormorant Garamond', serif; font-size: 1.05rem; font-weight: 400; color: var(--charcoal); margin-bottom: 4px; }
-  .product-type { font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
-  .product-price { font-family: 'Cinzel', serif; font-size: 0.95rem; color: var(--gold-deep); font-weight: 600; }
+  /* Product overlay — sits inside .product-img, over the image */
+  .product-card-info {
+    position: absolute; bottom: 0; left: 0; right: 0; z-index: 2;
+    padding: 2rem 1.4rem 1.4rem;
+    background: linear-gradient(to top, rgba(10,8,4,0.92) 0%, rgba(10,8,4,0.55) 55%, transparent 100%);
+    color: white;
+    pointer-events: none;
+  }
+  .product-type { font-size: 0.62rem; letter-spacing: 0.25em; text-transform: uppercase; color: rgba(255,255,255,0.75); margin-bottom: 5px; font-family: 'Jost', sans-serif; }
+  .product-name { font-family: 'Cinzel', serif; font-size: 1.05rem; font-weight: 600; letter-spacing: 0.05em; color: #fff; margin-bottom: 5px; }
+  .product-card-footer { display: block; margin-top: 3px; border-top: none; padding-top: 0; }
+  .product-price { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.95rem; color: rgba(255,255,255,0.8); }
+  .product-wa-btn {
+    background: linear-gradient(135deg, rgba(37,211,102,0.18), rgba(18,140,126,0.12));
+    border: 1px solid rgba(37,211,102,0.35);
+    color: #4ade80; font-family: 'Jost', sans-serif;
+    font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase;
+    padding: 6px 10px; border-radius: 4px; cursor: pointer;
+    transition: all 0.25s; white-space: nowrap;
+  }
+  .product-wa-btn:hover {
+    background: linear-gradient(135deg, rgba(37,211,102,0.32), rgba(18,140,126,0.22));
+    border-color: rgba(37,211,102,0.6); color: #6effa0;
+    box-shadow: 0 2px 12px rgba(37,211,102,0.2);
+  }
 
   /* ===== GLASSMORPHISM CARDS (Why Us, Testimonials) ===== */
   .why-us { background: var(--surface-1); }
@@ -1205,14 +1243,25 @@
     .products-tabs { gap: 0; overflow-x: auto; justify-content: flex-start; padding-bottom: 0; -webkit-overflow-scrolling: touch; }
     .tab-btn { padding: 10px 1rem; white-space: nowrap; font-size: 0.7rem; }
     .product-wish { opacity: 1; }
-    .product-name { font-size: 0.9rem; }
-    .product-price { font-size: 0.82rem; }
+    .product-card-info { padding: 1.2rem 1rem 1rem; }
+    .product-name { font-size: 0.88rem; }
+    .product-price { font-size: 0.8rem; }
+    .product-card-footer { margin-top: 2px; }
 
     /* ----- WHATSAPP MODAL ----- */
-    .wa-modal { width: 96vw; }
-    .wa-modal-header { padding: 1.5rem 1.5rem 1rem; }
-    .wa-modal-body { padding: 1.2rem 1.5rem; }
-    .wa-modal-footer { padding: 0 1.5rem 1.5rem; }
+    .wa-overlay { align-items: flex-end; padding: 0; }
+    .wa-modal {
+      width: 100%; border-radius: 16px 16px 0 0;
+      max-height: 92vh; overflow-y: auto;
+      animation: waMobileIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes waMobileIn { from{transform:translateY(100%)} to{transform:translateY(0)} }
+    .wa-modal-header { padding: 1.4rem 1.4rem 1rem; }
+    .wa-modal-body { padding: 1rem 1.4rem; }
+    .wa-modal-footer { padding: 0 1.4rem 1.8rem; flex-direction: column; gap: 8px; }
+    .wa-btn-cancel { flex: none; }
+    .wa-btn-ok { flex: none; padding: 15px; font-size: 0.82rem; }
+    .wa-message-preview { display: none; }
 
     /* ----- BANNER (Custom Creation) ----- */
     .banner {
@@ -1371,7 +1420,7 @@
     position: absolute; top: 0; left: 0; height: 100%;
     width: 0%; background: linear-gradient(90deg, rgba(201,168,76,0.4), var(--gold), rgba(201,168,76,0.4));
     border-radius: 2px;
-    transition: width 5.5s cubic-bezier(0.22, 0.61, 0.36, 1);
+    transition: width 1.6s cubic-bezier(0.22, 0.61, 0.36, 1);
   }
   .loader-bar.filling { width: 100%; }
 
@@ -1488,7 +1537,7 @@
   </div>
   <div class="wish-drawer-footer" id="wishDrawerFooter" style="display:none;">
     <div class="wish-count-label" id="wishCountLabel">0 pieces saved</div>
-    <button class="wish-enquire-btn" onclick="enquireWishlist()">◆ Enquire About These Pieces</button>
+    <button class="wish-enquire-btn" onclick="enquireWishlist()"><span>📲</span> Enquire via WhatsApp</button>
   </div>
 </div>
 
@@ -1636,8 +1685,8 @@
         <span class="price-save" id="featuredPriceSave">Save 14%</span>
       </div>
       <div class="featured-actions">
-        <a href="#" class="btn-primary" onclick="event.preventDefault();openWaModal({name:document.getElementById('featuredName').innerText,type:document.getElementById('featuredTag').textContent,price:document.getElementById('featuredPriceMain').textContent,image:siteData.featured.image||null,desc:document.getElementById('featuredDesc').textContent})">Enquire via WhatsApp</a>
-        <a href="#" class="btn-outline" onclick="event.preventDefault();openWaModal({name:document.getElementById('featuredName').innerText,type:document.getElementById('featuredTag').textContent,price:document.getElementById('featuredPriceMain').textContent,image:siteData.featured.image||null,desc:document.getElementById('featuredDesc').textContent})">Ask Our Specialists</a>
+        <a href="#" class="btn-primary" onclick="event.preventDefault();openFeaturedWaModal()">Enquire via WhatsApp</a>
+        <!-- <a href="#" class="btn-outline" onclick="event.preventDefault();openFeaturedWaModal()">Ask Our Specialists</a> -->
       </div>
     </div>
   </div>
@@ -2731,6 +2780,13 @@ const svgPlaceholders = [
   `<svg width="140" height="140" viewBox="0 0 140 140"><defs><radialGradient id="pg4a" cx="30%" cy="30%" r="60%"><stop offset="0%" stop-color="#F9E89A"/><stop offset="100%" stop-color="#7A5F1A"/></radialGradient></defs><path d="M20,40 Q70,20 120,40 Q125,70 120,100 Q70,120 20,100 Q15,70 20,40" fill="none" stroke="url(#pg4a)" stroke-width="4"/><ellipse cx="70" cy="108" rx="22" ry="26" fill="url(#pg4a)"/></svg>`
 ];
 
+// ===== PRODUCT CLICK REGISTRY (safe mobile WA trigger) =====
+window._productRegistry = {};
+window.openProductWa = function(id) {
+  const p = window._productRegistry[id];
+  if (p) openWaModal(p);
+};
+
 // ===== WISHLIST =====
 const wishlist = new Set(JSON.parse(localStorage.getItem('vzenq_wishlist') || '[]'));
 function toggleWish(id, btn) {
@@ -2759,19 +2815,27 @@ window.toggleWish = toggleWish;
 function renderProducts(filter='All') {
   const grid = document.getElementById('productsGrid');
   const filtered = filter === 'All' ? siteData.products : siteData.products.filter(p => p.type === filter);
+  // Register all products for safe mobile click
+  filtered.forEach(p => { window._productRegistry[p.id] = p; });
   grid.innerHTML = filtered.map((p, i) => {
     const imgContent = p.image
       ? `<img src="${p.image}" alt="${p.name}" style="width:100%;height:100%;object-fit:cover;">`
       : svgPlaceholders[i % svgPlaceholders.length];
     const isWished = wishlist.has(String(p.id));
-    return `<div class="product-card" style="cursor:pointer;" onclick="openWaModal(${JSON.stringify(p).replace(/"/g,'&quot;')})">
+    const badge = p.badge ? `<div class="card-badge">${p.badge}</div>` : '';
+    return `<div class="product-card" onclick="openProductWa('${p.id}')">
       <div class="product-img">
         <div class="product-img-inner">${imgContent}</div>
+        ${badge}
         <div class="product-wish${isWished ? ' wishlisted' : ''}" onclick="event.stopPropagation();toggleWish('${p.id}', this)">${isWished ? '♥' : '♡'}</div>
+        <div class="product-card-info">
+          <div class="product-type">${p.type}</div>
+          <div class="product-name">${p.name}</div>
+          <div class="product-card-footer">
+            <span class="product-price">${p.price}</span>
+          </div>
+        </div>
       </div>
-      <div class="product-type">${p.type}</div>
-      <div class="product-name">${p.name}</div>
-      <div class="product-price">${p.price}</div>
     </div>`;
   }).join('');
 }
@@ -3325,24 +3389,41 @@ window.addEventListener('scroll', () => {
 })();
 
 const _loaderStart = Date.now();
+let _loaderDismissed = false;
 function dismissLoader() {
+  if (_loaderDismissed) return;
+  _loaderDismissed = true;
   const elapsed = Date.now() - _loaderStart;
-  const minTime = 6000; // 6 seconds minimum
+  const minTime = 1800; // 1.8 seconds minimum (was 6s — too long)
   const delay = Math.max(0, minTime - elapsed);
   setTimeout(() => {
     if (window._loaderInterval) clearInterval(window._loaderInterval);
     const loader = document.getElementById('vzenqLoader');
+    if (!loader) return;
     loader.classList.add('hiding');
     document.body.classList.remove('loading-active');
     setTimeout(() => { loader.style.display = 'none'; }, 750);
   }, delay);
 }
+// Hard safety net: dismiss loader after 5s no matter what
+setTimeout(() => {
+  if (!_loaderDismissed) {
+    console.warn('Loader safety timeout triggered');
+    dismissLoader();
+    // Still try to render defaults
+    try { renderProducts(); renderCollections(); renderRates(); updateWishNavBadge(); } catch(e) {}
+  }
+}, 5000);
 
 // ===== PUBLIC FIREBASE DATA LOAD (runs for ALL visitors, no auth needed) =====
+const _fbTimeout = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase timeout')), ms));
+const _fbGet = (ref, ms=4000) => Promise.race([getDoc(ref), _fbTimeout(ms)]);
+const _fbGetDocs = (ref, ms=4000) => Promise.race([getDocs(ref), _fbTimeout(ms)]);
+
 async function loadPublicDataFromFirebase() {
   try {
     // Load site config (rates, featured, store, hero)
-    const snap = await getDoc(doc(db, 'siteConfig', 'main'));
+    const snap = await _fbGet(doc(db, 'siteConfig', 'main'));
     if (snap.exists()) {
       const d = snap.data();
       if (d.rates) siteData.rates = { ...siteData.rates, ...d.rates };
@@ -3353,10 +3434,10 @@ async function loadPublicDataFromFirebase() {
     // Load products from Firestore (fallback if orderBy fails due to missing/mixed createdAt types)
     let prodSnap;
     try {
-      prodSnap = await getDocs(query(collection(db, 'products'), orderBy('createdAt', 'asc')));
+      prodSnap = await _fbGetDocs(query(collection(db, 'products'), orderBy('createdAt', 'asc')));
     } catch(orderErr) {
       console.warn('orderBy failed, loading without sort:', orderErr);
-      prodSnap = await getDocs(collection(db, 'products'));
+      prodSnap = await _fbGetDocs(collection(db, 'products'));
     }
     if (!prodSnap.empty) {
       siteData.products = [];
@@ -3365,7 +3446,7 @@ async function loadPublicDataFromFirebase() {
     // Images are now stored directly inside each product doc — no separate fetch needed.
     // Still load productImages for hero/featured/banner and legacy data
     try {
-      const imgSnap = await getDocs(collection(db, 'productImages'));
+      const imgSnap = await _fbGetDocs(collection(db, 'productImages'));
       imgSnap.forEach(d => {
         const data = d.data();
         if (d.id === '_featured') {
@@ -3385,7 +3466,7 @@ async function loadPublicDataFromFirebase() {
       // Not fatal — product images are now stored in the products collection itself
     }
     // Load collection images
-    const collSnap = await getDocs(collection(db, 'collectionImages'));
+    const collSnap = await _fbGetDocs(collection(db, 'collectionImages'));
     collSnap.forEach(d => {
       const idx = parseInt(d.id);
       if (!isNaN(idx) && siteData.collections[idx]) {
@@ -3470,7 +3551,11 @@ async function seedDefaultProductsIfNeeded() {
 }
 
 // ===== INIT — load Firebase data for ALL visitors before showing page =====
-seedDefaultProductsIfNeeded().then(() => loadPublicDataFromFirebase());
+// Seed runs silently in background; if it times out or fails, still load the page
+const _seedTimeout = new Promise(resolve => setTimeout(resolve, 3000)); // max 3s for seed
+Promise.race([seedDefaultProductsIfNeeded(), _seedTimeout])
+  .then(() => loadPublicDataFromFirebase())
+  .catch(() => loadPublicDataFromFirebase()); // always load even if seed fails
 
 // ===== COLLECTION IMAGES ADMIN =====
 function renderCollAdminGrid() {
@@ -3657,12 +3742,21 @@ function updateWishNavBadge() {
 
 function enquireWishlist() {
   closeWishlistDrawer();
-  const names = [...wishlist].map(id => {
+  const pieces = [...wishlist].map(id => {
     const p = siteData.products.find(x => String(x.id) === String(id));
-    return p ? p.name : null;
-  }).filter(Boolean).join(', ');
-  document.getElementById('apptMessage').value = `I am interested in the following pieces: ${names}`;
-  openAppointmentModal();
+    return p || null;
+  }).filter(Boolean);
+  if (!pieces.length) return;
+  const phone = '919944966353';
+  let msg = `Hello Vzenq! \u{1F31F}\n\nI am interested in the following pieces from your collection:\n\n`;
+  pieces.forEach((p, i) => {
+    msg += `✦ *${p.name}*`;
+    if (p.type) msg += ` (${p.type})`;
+    if (p.price) msg += ` — ${p.price}`;
+    if (i < pieces.length - 1) msg += `\n`;
+  });
+  msg += `\n\nCould you please share availability, customisation options, and delivery details?\n\nThank you!`;
+  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 window.enquireWishlist = enquireWishlist;
 
@@ -3746,6 +3840,18 @@ document.getElementById('waOverlay').addEventListener('click', function(e) {
 window.openWaModal = openWaModal;
 window.closeWaModal = closeWaModal;
 window.sendWhatsApp = sendWhatsApp;
+
+// Featured piece WA modal — reads live DOM values so it always has latest admin edits
+window.openFeaturedWaModal = function() {
+  const name = document.getElementById('featuredName').innerText.replace(/\n/g, ' ').trim();
+  const type = document.getElementById('featuredTag').textContent.trim();
+  const price = document.getElementById('featuredPriceMain').textContent.trim();
+  const desc = document.getElementById('featuredDesc').textContent.trim();
+  // Get featured image from the DOM (feat-real img tag)
+  const featImg = document.querySelector('#featuredImgWrap img.feat-real');
+  const image = featImg ? featImg.src : null;
+  openWaModal({ name, type, price, desc, image });
+};
 
 // Mobile menu
 function toggleMobileMenu() {
