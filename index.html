@@ -388,9 +388,9 @@
   .products { background: var(--white); }
   .products-header { text-align: center; margin-bottom: 1rem; }
   .products-tabs { display: flex; justify-content: center; gap: 0; margin: 2.5rem 0 3.5rem; border-bottom: 1px solid rgba(184,151,58,0.2); }
-  .tab-btn { background: none; border: none; cursor: pointer; font-family: 'Jost', sans-serif; font-size: 0.78rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); padding: 10px 2rem; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.3s; }
+  .tab-btn { background: none; border: none; cursor: pointer; font-family: 'Jost', sans-serif; font-size: 0.72rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); padding: 14px 2.2rem; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.3s; }
   .tab-btn:hover { color: var(--gold); }
-  .tab-btn.active { color: var(--gold-deep); border-bottom-color: var(--gold); }
+  .tab-btn.active { color: var(--gold-deep); border-bottom-color: var(--gold); font-weight: 600; }
   .products-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 2rem; }
 
   /* ===== PRODUCT CARD — Full-image overlay style (like collection cards) ===== */
@@ -1240,8 +1240,9 @@
 
     /* ----- PRODUCTS ----- */
     .products-grid { grid-template-columns: repeat(2,1fr); gap: 0.9rem; }
-    .products-tabs { gap: 0; overflow-x: auto; justify-content: flex-start; padding-bottom: 0; -webkit-overflow-scrolling: touch; }
-    .tab-btn { padding: 10px 1rem; white-space: nowrap; font-size: 0.7rem; }
+    .products-tabs { gap: 0; overflow-x: auto; justify-content: flex-start; padding-bottom: 0; -webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none; }
+    .products-tabs::-webkit-scrollbar { display: none; }
+    .tab-btn { padding: 14px 1.4rem; white-space: nowrap; font-size: 0.72rem; letter-spacing: 0.22em; flex-shrink: 0; }
     .product-wish { opacity: 1; }
     .product-card-info { padding: 1.2rem 1rem 1rem; }
     .product-name { font-size: 0.88rem; }
@@ -2039,6 +2040,14 @@ service cloud.firestore {
         </div>
       </div>
       <button class="admin-save-btn" onclick="addNewProduct()">Add Product</button>
+
+      <div class="admin-subsection-title" style="margin-top:2.5rem;">Manage Categories</div>
+      <p style="font-size:0.73rem;color:var(--muted);margin-bottom:1.2rem;line-height:1.6;">Add or remove categories. Changes apply to the shop filter tabs instantly.</p>
+      <div style="display:flex;gap:0.8rem;margin-bottom:1.2rem;">
+        <input class="admin-input" id="newCategoryName" type="text" placeholder="New category name…" style="flex:1;">
+        <button onclick="addCategory()" style="padding:10px 18px;background:linear-gradient(135deg,rgba(201,168,76,0.25),rgba(201,168,76,0.1));border:1px solid rgba(201,168,76,0.5);color:var(--gold-light);font-family:'Jost',sans-serif;font-size:0.72rem;letter-spacing:0.15em;text-transform:uppercase;cursor:pointer;border-radius:4px;white-space:nowrap;transition:all 0.2s;" onmouseover="this.style.background='linear-gradient(135deg,rgba(201,168,76,0.4),rgba(201,168,76,0.2))'" onmouseout="this.style.background='linear-gradient(135deg,rgba(201,168,76,0.25),rgba(201,168,76,0.1))'">+ Add</button>
+      </div>
+      <div id="categoryTagsAdmin" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
     </div>
 
     <!-- COLLECTIONS -->
@@ -2206,9 +2215,18 @@ service cloud.firestore {
 
     <!-- ATTENDANCE -->
     <div class="admin-section" id="adminAttendance">
-      <div class="att-date-bar">
-        <div class="att-date-label">Daily Attendance</div>
-        <input class="att-date-input" type="date" id="attDatePicker">
+      <div class="att-date-bar" style="flex-wrap:wrap;gap:10px;">
+        <div class="att-date-label">Attendance</div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+          <div style="display:flex;border:1px solid rgba(201,168,76,0.25);border-radius:4px;overflow:hidden;">
+            <button id="attViewDay" onclick="setAttView('day')" style="padding:7px 14px;background:rgba(201,168,76,0.22);border:none;color:var(--gold-light);font-family:'Jost',sans-serif;font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;cursor:pointer;">Day</button>
+            <button id="attViewMonth" onclick="setAttView('month')" style="padding:7px 14px;background:none;border:none;color:rgba(255,255,255,0.4);font-family:'Jost',sans-serif;font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;cursor:pointer;">Month</button>
+            <button id="attViewYear" onclick="setAttView('year')" style="padding:7px 14px;background:none;border:none;color:rgba(255,255,255,0.4);font-family:'Jost',sans-serif;font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;cursor:pointer;">Year</button>
+          </div>
+          <input class="att-date-input" type="date" id="attDatePicker" style="display:block;">
+          <input class="att-date-input" type="month" id="attMonthPicker" style="display:none;">
+          <input class="att-date-input" type="number" id="attYearPicker" min="2020" max="2099" placeholder="YYYY" style="display:none;width:90px;">
+        </div>
       </div>
       <div class="att-summary" id="attSummary">
         <div class="att-stat"><div class="att-stat-num green" id="attPresentCount">0</div><div class="att-stat-label">Present</div></div>
@@ -2216,12 +2234,15 @@ service cloud.firestore {
         <div class="att-stat"><div class="att-stat-num orange" id="attHalfCount">0</div><div class="att-stat-label">Half Day</div></div>
       </div>
       <div id="attendanceList"></div>
-      <button class="admin-save-btn" onclick="saveAttendance()" style="margin-top:1rem;">Save Attendance</button>
+      <button class="admin-save-btn" id="attSaveBtn" onclick="saveAttendance()" style="margin-top:1rem;">Save Attendance</button>
     </div>
 
     <!-- ENQUIRIES -->
     <div class="admin-section" id="adminEnquiries">
-      <div class="admin-subsection-title">Customer Enquiries & Appointments</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
+        <div class="admin-subsection-title" style="margin:0;border:none;padding:0;">Customer Enquiries & Appointments</div>
+        <button onclick="loadEnquiries()" style="background:none;border:1px solid rgba(201,168,76,0.3);color:var(--muted);font-family:'Jost',sans-serif;font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;padding:6px 14px;border-radius:4px;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.borderColor='rgba(201,168,76,0.6)';this.style.color='var(--gold-light)'" onmouseout="this.style.borderColor='rgba(201,168,76,0.3)';this.style.color='var(--muted)'">↻ Refresh</button>
+      </div>
       <div id="enquiriesList"><div class="enq-empty">Loading enquiries…</div></div>
     </div>
   </div>
@@ -2354,6 +2375,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // Set today's date on attendance picker
   const dp = document.getElementById('attDatePicker');
   if (dp) { dp.value = new Date().toISOString().split('T')[0]; dp.addEventListener('change', renderAttendanceForDate); }
+  const mp = document.getElementById('attMonthPicker');
+  if (mp) { mp.value = new Date().toISOString().slice(0,7); mp.addEventListener('change', renderAttendanceMonth); }
+  const yp = document.getElementById('attYearPicker');
+  if (yp) { yp.value = new Date().getFullYear(); yp.addEventListener('change', renderAttendanceYear); }
   // Toggle admin email/pass fields when role changes
   document.getElementById('newStaffRole').addEventListener('change', function() {
     const isAdmin = this.value === 'admin';
@@ -2429,6 +2454,7 @@ async function loadSiteDataFromFirebase() {
     renderRates();
     renderAdminProductList();
     syncAdminInputs();
+    loadCategories();
     document.getElementById('heroTag1Label').textContent = siteData.hero.tag1Label || 'Material';
     document.getElementById('heroTag1Val').textContent = siteData.hero.tag1Val || '22KT Gold';
     document.getElementById('heroTag2Label').textContent = siteData.hero.tag2Label || 'Gemstone';
@@ -2712,13 +2738,16 @@ async function loadEnquiries() {
     el.innerHTML = snap.docs.map(d => {
       const e = d.data();
       const dateStr = e.submittedAt ? new Date(e.submittedAt.seconds * 1000).toLocaleString('en-IN', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
-      return `<div class="enq-card">
+      return `<div class="enq-card" id="enq-${d.id}">
         <div class="enq-card-header">
           <div>
             <span class="enq-name">${e.name}</span>
             <span class="enq-badge">${e.service || 'Enquiry'}</span>
           </div>
-          <div class="enq-date">${dateStr}</div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="enq-date">${dateStr}</div>
+            <button onclick="deleteEnquiry('${d.id}')" title="Delete" style="background:rgba(255,80,80,0.1);border:1px solid rgba(255,80,80,0.3);color:#ff6b6b;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:0.8rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,80,80,0.25)';this.style.borderColor='rgba(255,80,80,0.6)'" onmouseout="this.style.background='rgba(255,80,80,0.1)';this.style.borderColor='rgba(255,80,80,0.3)'">✕</button>
+          </div>
         </div>
         <div class="enq-detail">📱 ${e.phone} &nbsp;|&nbsp; ✉️ ${e.email}</div>
         ${e.preferredDate && e.preferredDate !== 'Not specified' ? `<div class="enq-detail">📅 ${e.preferredDate}${e.preferredTime && e.preferredTime !== 'Not specified' ? ' · ' + e.preferredTime : ''}</div>` : ''}
@@ -2731,6 +2760,17 @@ async function loadEnquiries() {
   }
 }
 window.loadEnquiries = loadEnquiries;
+
+async function deleteEnquiry(id) {
+  if (!confirm('Delete this enquiry? This cannot be undone.')) return;
+  try {
+    await deleteDoc(doc(db, 'enquiries', id));
+    const card = document.getElementById('enq-' + id);
+    if (card) { card.style.opacity='0'; card.style.transform='translateX(20px)'; card.style.transition='all 0.3s'; setTimeout(()=>card.remove(), 300); }
+    showToast('Enquiry deleted');
+  } catch(e) { showToast('Error deleting enquiry'); console.error(e); }
+}
+window.deleteEnquiry = deleteEnquiry;
 
 // ===== DATA STORE =====
 let siteData = {
@@ -3781,6 +3821,206 @@ window.renderAttendanceForDate = renderAttendanceForDate;
 window.renderStaffList = renderStaffList;
 window.renderCollAdminGrid = renderCollAdminGrid;
 window.loadCollectionImages = loadCollectionImages;
+
+// ===== CATEGORY MANAGEMENT =====
+const DEFAULT_CATS = ['Ring','Bangle','Earrings','Necklace','Bridal'];
+let siteCategories = [...DEFAULT_CATS];
+
+function renderCategoryTags() {
+  const container = document.getElementById('categoryTagsAdmin');
+  if (!container) return;
+  container.innerHTML = siteCategories.map(cat => `
+    <div style="display:inline-flex;align-items:center;gap:6px;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);border-radius:4px;padding:5px 10px;">
+      <span style="font-family:'Jost',sans-serif;font-size:0.72rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold-light);">${cat}</span>
+      ${DEFAULT_CATS.includes(cat) ? '' : `<button onclick="deleteCategory('${cat}')" style="background:none;border:none;color:rgba(255,80,80,0.7);cursor:pointer;font-size:0.75rem;padding:0;line-height:1;transition:color 0.2s;" onmouseover="this.style.color='#ff6b6b'" onmouseout="this.style.color='rgba(255,80,80,0.7)'">✕</button>`}
+    </div>`).join('');
+  // Sync all category dropdowns
+  ['newProductCat','editProductCat'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = siteCategories.map(c => `<option${c===cur?' selected':''}>${c}</option>`).join('');
+  });
+  // Sync shop filter tabs
+  const tabsEl = document.querySelector('.products-tabs');
+  if (tabsEl) {
+    const activeTab = document.querySelector('.tab-btn.active')?.dataset.cat || 'All';
+    tabsEl.innerHTML = `<button class="tab-btn${activeTab==='All'?' active':''}" data-cat="All">All</button>` +
+      siteCategories.map(c => `<button class="tab-btn${activeTab===c?' active':''}" data-cat="${c}">${c}s</button>`).join('');
+    tabsEl.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabsEl.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderProducts(btn.dataset.cat);
+      });
+    });
+  }
+}
+
+async function addCategory() {
+  const input = document.getElementById('newCategoryName');
+  const name = input.value.trim();
+  if (!name) { showToast('Enter a category name'); return; }
+  const formatted = name.charAt(0).toUpperCase() + name.slice(1);
+  if (siteCategories.includes(formatted)) { showToast('Category already exists'); return; }
+  siteCategories.push(formatted);
+  try {
+    await setDoc(doc(db, 'settings', 'categories'), { list: siteCategories });
+  } catch(e) { console.error('Category save error:', e); }
+  input.value = '';
+  renderCategoryTags();
+  showToast('Category added ✓');
+}
+
+async function deleteCategory(cat) {
+  if (!confirm(`Delete category "${cat}"? Products in this category will remain but become uncategorised.`)) return;
+  siteCategories = siteCategories.filter(c => c !== cat);
+  try {
+    await setDoc(doc(db, 'settings', 'categories'), { list: siteCategories });
+  } catch(e) { console.error('Category delete error:', e); }
+  renderCategoryTags();
+  showToast('Category removed');
+}
+
+// Load categories from Firebase on init
+async function loadCategories() {
+  try {
+    const snap = await getDoc(doc(db, 'settings', 'categories'));
+    if (snap.exists() && snap.data().list?.length) {
+      siteCategories = snap.data().list;
+    }
+  } catch(e) { /* use defaults */ }
+  renderCategoryTags();
+}
+
+window.addCategory = addCategory;
+window.deleteCategory = deleteCategory;
+
+// ===== ATTENDANCE VIEW SWITCHING =====
+let _attView = 'day';
+
+function setAttView(view) {
+  _attView = view;
+  ['day','month','year'].forEach(v => {
+    const btn = document.getElementById('attView' + v.charAt(0).toUpperCase() + v.slice(1));
+    if (btn) {
+      btn.style.background = v === view ? 'rgba(201,168,76,0.22)' : 'none';
+      btn.style.color = v === view ? 'var(--gold-light)' : 'rgba(255,255,255,0.4)';
+    }
+    const picker = document.getElementById('att' + v.charAt(0).toUpperCase() + v.slice(1) + 'Picker');
+    if (picker) picker.style.display = v === view ? 'block' : 'none';
+  });
+  const saveBtn = document.getElementById('attSaveBtn');
+  if (saveBtn) saveBtn.style.display = view === 'day' ? 'block' : 'none';
+  if (view === 'day') { renderAttendanceForDate(); }
+  else if (view === 'month') { renderAttendanceMonth(); }
+  else { renderAttendanceYear(); }
+}
+window.setAttView = setAttView;
+
+async function renderAttendanceMonth() {
+  const picker = document.getElementById('attMonthPicker');
+  const month = picker?.value || new Date().toISOString().slice(0,7);
+  const el = document.getElementById('attendanceList');
+  if (!el) return;
+  el.innerHTML = '<div style="color:rgba(255,255,255,0.3);font-size:0.85rem;padding:1rem 0;">Loading month data…</div>';
+  try {
+    // Get all days in month
+    const [yr, mo] = month.split('-').map(Number);
+    const days = new Date(yr, mo, 0).getDate();
+    const dates = Array.from({length: days}, (_, i) => `${month}-${String(i+1).padStart(2,'0')}`);
+    const snaps = await Promise.all(dates.map(d => getDoc(doc(db, 'attendance', d))));
+    // Aggregate per staff
+    const totals = {}; // staffId → {present,half,absent}
+    staffList.forEach(s => { totals[s.id] = {present:0,half:0,absent:0,name:s.name,role:s.role}; });
+    snaps.forEach(snap => {
+      if (!snap.exists()) return;
+      const recs = snap.data().records || {};
+      staffList.forEach(s => {
+        const st = recs[s.id] || 'absent';
+        if (totals[s.id]) totals[s.id][st]++;
+      });
+    });
+    if (!staffList.length) { el.innerHTML = '<div style="color:rgba(255,255,255,0.3);font-size:0.85rem;text-align:center;padding:1rem;">No staff members.</div>'; updateAttSummary(); return; }
+    el.innerHTML = `<div style="font-family:'Cinzel',serif;font-size:0.72rem;letter-spacing:0.1em;color:var(--gold);margin-bottom:1rem;text-transform:uppercase;">${new Date(yr, mo-1).toLocaleString('en-IN',{month:'long',year:'numeric'})}</div>` +
+      staffList.map(s => {
+        const t = totals[s.id] || {present:0,half:0,absent:0};
+        const initials = s.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+        return `<div class="att-row">
+          <div class="att-avatar">${initials}</div>
+          <div style="flex:1;"><div class="att-name">${s.name}</div><div class="att-role">${s.role}</div></div>
+          <div style="display:flex;gap:10px;font-family:'Jost',sans-serif;font-size:0.72rem;">
+            <span style="color:#4CAF50;">✓ ${t.present}d</span>
+            <span style="color:#FF9800;">½ ${t.half}d</span>
+            <span style="color:#ff6b6b;">✗ ${t.absent}d</span>
+          </div>
+        </div>`;
+      }).join('');
+    // Update summary totals
+    let tp=0,th=0,ta=0;
+    staffList.forEach(s=>{tp+=totals[s.id]?.present||0;th+=totals[s.id]?.half||0;ta+=totals[s.id]?.absent||0;});
+    const p=document.getElementById('attPresentCount'),a=document.getElementById('attAbsentCount'),h=document.getElementById('attHalfCount');
+    if(p)p.textContent=tp; if(a)a.textContent=ta; if(h)h.textContent=th;
+  } catch(e) { el.innerHTML = '<div style="color:rgba(255,255,255,0.3);font-size:0.85rem;padding:1rem;">Error loading month data.</div>'; console.error(e); }
+}
+
+async function renderAttendanceYear() {
+  const picker = document.getElementById('attYearPicker');
+  const yr = parseInt(picker?.value) || new Date().getFullYear();
+  const el = document.getElementById('attendanceList');
+  if (!el) return;
+  el.innerHTML = '<div style="color:rgba(255,255,255,0.3);font-size:0.85rem;padding:1rem 0;">Loading year data…</div>';
+  try {
+    const months = Array.from({length:12},(_,i)=>`${yr}-${String(i+1).padStart(2,'0')}`);
+    // Per staff, per month totals
+    const totals = {};
+    staffList.forEach(s => { totals[s.id] = Array(12).fill(0).map(()=>({present:0,half:0,absent:0})); });
+    // Fetch all attendance docs with yr prefix — batch by month
+    for (let mi=0; mi<12; mi++) {
+      const mo = mi+1;
+      const days = new Date(yr, mo, 0).getDate();
+      const dates = Array.from({length:days},(_,i)=>`${yr}-${String(mo).padStart(2,'0')}-${String(i+1).padStart(2,'0')}`);
+      const snaps = await Promise.all(dates.map(d=>getDoc(doc(db,'attendance',d))));
+      snaps.forEach(snap=>{
+        if(!snap.exists())return;
+        const recs=snap.data().records||{};
+        staffList.forEach(s=>{
+          const st=recs[s.id]||'absent';
+          if(totals[s.id])totals[s.id][mi][st]++;
+        });
+      });
+    }
+    if (!staffList.length) { el.innerHTML = '<div style="color:rgba(255,255,255,0.3);font-size:0.85rem;text-align:center;padding:1rem;">No staff members.</div>'; return; }
+    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    el.innerHTML = `<div style="font-family:'Cinzel',serif;font-size:0.72rem;letter-spacing:0.1em;color:var(--gold);margin-bottom:1rem;text-transform:uppercase;">Year ${yr}</div>` +
+      staffList.map(s => {
+        const initials = s.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+        const yearPresent = totals[s.id].reduce((a,m)=>a+m.present,0);
+        const yearHalf = totals[s.id].reduce((a,m)=>a+m.half,0);
+        return `<div class="att-row" style="flex-direction:column;align-items:flex-start;gap:10px;">
+          <div style="display:flex;align-items:center;gap:12px;width:100%;">
+            <div class="att-avatar">${initials}</div>
+            <div style="flex:1;"><div class="att-name">${s.name}</div><div class="att-role">${s.role}</div></div>
+            <div style="font-family:'Jost',sans-serif;font-size:0.72rem;color:rgba(255,255,255,0.5);">
+              <span style="color:#4CAF50;">✓ ${yearPresent}d</span> &nbsp;
+              <span style="color:#FF9800;">½ ${yearHalf}d</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;width:100%;padding-left:54px;">
+            ${monthNames.map((mn,mi)=>{
+              const t=totals[s.id][mi];
+              const pct = t.present+t.half > 0 ? Math.round((t.present+t.half*0.5)/(t.present+t.half+t.absent)*100) : 0;
+              const col = pct>=80?'#4CAF50':pct>=50?'#FF9800':'#ff6b6b';
+              return `<div title="${mn}: ${t.present}P ${t.half}H" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:3px;padding:3px 5px;font-family:'Jost',sans-serif;font-size:0.6rem;color:${col};letter-spacing:0.05em;text-transform:uppercase;">${mn}</div>`;
+            }).join('')}
+          </div>
+        </div>`;
+      }).join('');
+    document.getElementById('attPresentCount').textContent='—';
+    document.getElementById('attAbsentCount').textContent='—';
+    document.getElementById('attHalfCount').textContent='—';
+  } catch(e) { el.innerHTML='<div style="color:rgba(255,255,255,0.3);font-size:0.85rem;padding:1rem;">Error loading year data.</div>'; console.error(e); }
+}
 
 // ===== WHATSAPP ENQUIRY MODAL =====
 let _currentWaProduct = null;
