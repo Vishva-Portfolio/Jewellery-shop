@@ -3259,20 +3259,18 @@ function dismissLoader() {
     setTimeout(() => { loader.style.display = 'none'; }, 750);
   }, delay);
 }
-// Hard safety net: dismiss loader after 5s no matter what
+// Hard safety net: dismiss loader after 10s no matter what
 setTimeout(() => {
   if (!_loaderDismissed) {
     console.warn('Loader safety timeout triggered');
     dismissLoader();
-    // Still try to render defaults
-    try { renderProducts(); renderCollections(); renderRates(); } catch(e) {}
   }
-}, 5000);
+}, 10000);
 
 // ===== PUBLIC FIREBASE DATA LOAD (runs for ALL visitors, no auth needed) =====
 const _fbTimeout = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error('Firebase timeout')), ms));
-const _fbGet = (ref, ms=4000) => Promise.race([getDoc(ref), _fbTimeout(ms)]);
-const _fbGetDocs = (ref, ms=4000) => Promise.race([getDocs(ref), _fbTimeout(ms)]);
+const _fbGet = (ref, ms=8000) => Promise.race([getDoc(ref), _fbTimeout(ms)]);
+const _fbGetDocs = (ref, ms=8000) => Promise.race([getDocs(ref), _fbTimeout(ms)]);
 
 async function loadPublicDataFromFirebase() {
   try {
@@ -3370,12 +3368,12 @@ async function loadPublicDataFromFirebase() {
       if (banner) banner.style.display = 'block';
       setFbStatus('error', 'rules');
     }
-    // Fallback: show local defaults so the page is not blank
+    // Firebase failed — render whatever data is available
     renderProducts();
     renderCollections();
     renderRates();
   } finally {
-    // Always dismiss the loader
+    // Always dismiss the loader after Firebase attempt completes
     dismissLoader();
   }
 }
