@@ -1890,6 +1890,28 @@
   </div>
 
   <div class="admin-body">
+    <!-- FIRESTORE RULES WARNING BANNER -->
+    <div id="firestoreRulesBanner" style="display:none;background:rgba(255,80,80,0.12);border:1px solid rgba(255,80,80,0.4);border-radius:8px;padding:1.2rem 1.4rem;margin-bottom:1.5rem;">
+      <div style="font-family:'Cinzel',serif;font-size:0.8rem;color:#ff6b6b;letter-spacing:0.1em;margin-bottom:0.6rem;">⚠️ Firestore Security Rules — Action Required</div>
+      <div style="font-size:0.78rem;color:rgba(255,255,255,0.7);line-height:1.7;margin-bottom:0.8rem;">Your Firestore rules are blocking unauthenticated reads. Images disappear on refresh because visitors can't read the database. Go to <strong style="color:#E0BE72;">Firebase Console → Firestore Database → Rules</strong> and replace with:</div>
+      <pre style="background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:1rem;font-size:0.75rem;color:#a8e6a8;overflow-x:auto;margin:0;">rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Public read for site content
+    match /products/{id} { allow read: if true; allow write: if request.auth != null; }
+    match /productImages/{id} { allow read: if true; allow write: if request.auth != null; }
+    match /siteConfig/{id} { allow read: if true; allow write: if request.auth != null; }
+    match /collectionImages/{id} { allow read: if true; allow write: if request.auth != null; }
+    // Auth-only collections
+    match /users/{id} { allow read, write: if request.auth != null; }
+    match /staff/{id} { allow read, write: if request.auth != null; }
+    match /attendance/{id} { allow read, write: if request.auth != null; }
+    match /enquiries/{id} { allow read: if request.auth != null; allow create: if true; }
+  }
+}</pre>
+      <button onclick="document.getElementById('firestoreRulesBanner').style.display='none'" style="margin-top:0.8rem;background:none;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.5);font-family:'Jost',sans-serif;font-size:0.65rem;letter-spacing:0.1em;padding:5px 12px;border-radius:4px;cursor:pointer;">Dismiss</button>
+    </div>
+
     <!-- RATES -->
     <div class="admin-section active" id="adminRates">
       <div class="admin-subsection-title">Today's Metal Rates</div>
@@ -2183,14 +2205,31 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 // ===== FIREBASE STATUS =====
-function setFbStatus(state) {
+function setFbStatus(state, detail) {
   const dot = document.getElementById('fbDot');
   const txt = document.getElementById('fbStatusText');
   if (!dot) return;
   if (state === 'connected') { dot.className='fb-dot connected'; txt.textContent='Firebase connected'; }
-  else if (state === 'error') { dot.className='fb-dot error'; txt.textContent='Firebase error'; }
+  else if (state === 'error') {
+    dot.className='fb-dot error';
+    txt.textContent = detail === 'rules' ? 'Firestore rules blocking reads — fix rules!' : 'Firebase error';
+  }
   else { dot.className='fb-dot'; txt.textContent='connecting…'; }
 }
+
+// ===== FIRESTORE RULES DIAGNOSTIC =====
+// Run this in browser console to test: window.testFirestoreRules()
+window.testFirestoreRules = async function() {
+  const tests = ['products','productImages','siteConfig','collectionImages'];
+  for (const col of tests) {
+    try {
+      await getDocs(collection(db, col));
+      console.log(`✅ ${col}: readable`);
+    } catch(e) {
+      console.error(`❌ ${col}: ${e.code} — ${e.message}`);
+    }
+  }
+};
 
 // ===== AUTH =====
 let currentUser = null;
@@ -2221,7 +2260,8 @@ onAuthStateChanged(auth, async (user) => {
     await loadStaffList();
   } else {
     currentUser = null;
-    setFbStatus('error');
+    // User is simply logged out — not a Firebase connection error
+    setFbStatus('connected');
   }
 });
 
@@ -2284,21 +2324,34 @@ async function loadSiteDataFromFirebase() {
       if (d.store) siteData.store = { ...siteData.store, ...d.store };
       if (d.hero) siteData.hero = { ...siteData.hero, ...d.hero };
     }
-    // Load products from firebase
-    const prodSnap = await getDocs(query(collection(db, 'products'), orderBy('createdAt', 'asc')));
+    // Load products from firebase (fallback if orderBy fails due to missing/mixed createdAt types)
+    let prodSnap;
+    try {
+      prodSnap = await getDocs(query(collection(db, 'products'), orderBy('createdAt', 'asc')));
+    } catch(orderErr) {
+      console.warn('Admin: orderBy failed, loading without sort:', orderErr);
+      prodSnap = await getDocs(collection(db, 'products'));
+    }
     if (!prodSnap.empty) {
       siteData.products = [];
       prodSnap.forEach(d => { siteData.products.push({ id: d.id, ...d.data() }); });
     }
-    // Load all images in one pass
-    const imgSnap = await getDocs(collection(db, 'productImages'));
-    imgSnap.forEach(d => {
-      const data = d.data();
-      if (d.id === '_featured') { if (data.image) siteData.featured.image = data.image; }
-      else if (d.id === '_heroImg') { if (data.image) { siteData.hero.heroImage = data.image; applyHeroImage(data.image); } }
-      else if (d.id === '_bannerImg') { if (data.image) { siteData.hero.bannerImage = data.image; applyBannerImage(data.image); } }
-      else { const prod = siteData.products.find(p => String(p.id) === String(d.id)); if (prod && data.image) prod.image = data.image; }
-    });
+    // Load all images in one pass (productImages used for hero/featured/banner + legacy product images)
+    try {
+      const imgSnap = await getDocs(collection(db, 'productImages'));
+      imgSnap.forEach(d => {
+        const data = d.data();
+        if (d.id === '_featured') { if (data.image) siteData.featured.image = data.image; }
+        else if (d.id === '_heroImg') { if (data.image) { siteData.hero.heroImage = data.image; applyHeroImage(data.image); } }
+        else if (d.id === '_bannerImg') { if (data.image) { siteData.hero.bannerImage = data.image; applyBannerImage(data.image); } }
+        else {
+          const prod = siteData.products.find(p => String(p.id) === String(d.id));
+          if (prod && !prod.image && data.image) prod.image = data.image; // legacy fallback
+        }
+      });
+    } catch(imgErr) {
+      console.warn('productImages read error (check Firestore rules):', imgErr);
+    }
     // Load collection images
     const collSnap = await getDocs(collection(db, 'collectionImages'));
     collSnap.forEach(d => {
@@ -2333,7 +2386,13 @@ async function loadSiteDataFromFirebase() {
     document.getElementById('heroTag2Val').textContent = siteData.hero.tag2Val || 'Blue Sapphire';
     document.getElementById('heroTag3Label').textContent = siteData.hero.tag3Label || 'Purity Certified';
     document.getElementById('heroTag3Val').textContent = siteData.hero.tag3Val || 'BIS Hallmark';
-  } catch(e) { console.warn('Firebase load error:', e); setFbStatus('error'); }
+  } catch(e) {
+    console.warn('Firebase load error:', e);
+    // Only flag as error if it is a real connection/permission failure on core data
+    if (e && (e.code === 'permission-denied' || e.code === 'unavailable')) {
+      setFbStatus('error');
+    }
+  }
 }
 
 async function saveSiteConfigToFirebase(section, data) {
@@ -3165,21 +3224,12 @@ function saveProductEdit() {
   const newImage = prev.dataset.src || null;
   if (newImage) { p.image = newImage; prev.dataset.src = ''; }
 
-  // Save product metadata (no image here)
-  setDoc(doc(db, 'products', String(selectedProductId)), {
-    name: p.name, type: p.type, price: p.price,
-    hasImage: !!p.image,
-    updatedAt: serverTimestamp()
-  }, { merge: true })
-  .then(async () => {
-    // Save image separately if new image was uploaded
-    if (newImage) {
-      const ok = await saveProductImage(selectedProductId, newImage);
-      showToast(ok ? 'Product & image saved ✓' : 'Product saved, image failed');
-    } else {
-      showToast('Product saved ✓');
-    }
-    // Re-render immediately from memory (image already in siteData)
+  // Save product including image directly in the product doc
+  const saveData = { name: p.name, type: p.type, price: p.price, updatedAt: serverTimestamp() };
+  if (newImage) saveData.image = newImage;
+  setDoc(doc(db, 'products', String(selectedProductId)), saveData, { merge: true })
+  .then(() => {
+    showToast(newImage ? 'Product & image saved ✓' : 'Product saved ✓');
     renderProducts(getActiveTab());
     renderAdminProductList();
   })
@@ -3212,17 +3262,14 @@ function addNewProduct() {
   const type = document.getElementById('newProductCat').value;
   const price = document.getElementById('newProductPrice').value.trim();
   if (!name || !price) { showToast('Please fill name and price'); return; }
-  const newProd = { name, type, price, hasImage: !!newProductImageData, createdAt: new Date().toISOString() };
+  const newProd = { name, type, price, hasImage: !!newProductImageData, createdAt: serverTimestamp() };
   const capturedImage = newProductImageData;
 
+  // Include image in the product doc itself
+  if (capturedImage) newProd.image = capturedImage;
   addDoc(collection(db, 'products'), newProd).then(async ref => {
     const prodWithId = { id: ref.id, ...newProd, image: capturedImage || null };
     siteData.products.push(prodWithId);
-
-    // Save image separately
-    if (capturedImage) {
-      await saveProductImage(ref.id, capturedImage);
-    }
 
     newProductImageData = null;
     document.getElementById('newProductName').value = '';
@@ -3303,27 +3350,40 @@ async function loadPublicDataFromFirebase() {
       if (d.store) siteData.store = { ...siteData.store, ...d.store };
       if (d.hero) siteData.hero = { ...siteData.hero, ...d.hero };
     }
-    // Load products from Firestore
-    const prodSnap = await getDocs(query(collection(db, 'products'), orderBy('createdAt', 'asc')));
+    // Load products from Firestore (fallback if orderBy fails due to missing/mixed createdAt types)
+    let prodSnap;
+    try {
+      prodSnap = await getDocs(query(collection(db, 'products'), orderBy('createdAt', 'asc')));
+    } catch(orderErr) {
+      console.warn('orderBy failed, loading without sort:', orderErr);
+      prodSnap = await getDocs(collection(db, 'products'));
+    }
     if (!prodSnap.empty) {
       siteData.products = [];
       prodSnap.forEach(d => { siteData.products.push({ id: d.id, ...d.data() }); });
     }
-    // Load product images (stored separately)
-    const imgSnap = await getDocs(collection(db, 'productImages'));
-    imgSnap.forEach(d => {
-      const data = d.data();
-      if (d.id === '_featured') {
-        if (data.image) siteData.featured.image = data.image;
-      } else if (d.id === '_heroImg') {
-        if (data.image) { siteData.hero.heroImage = data.image; applyHeroImage(data.image); }
-      } else if (d.id === '_bannerImg') {
-        if (data.image) { siteData.hero.bannerImage = data.image; applyBannerImage(data.image); }
-      } else {
-        const prod = siteData.products.find(p => String(p.id) === String(d.id));
-        if (prod && data.image) prod.image = data.image;
-      }
-    });
+    // Images are now stored directly inside each product doc — no separate fetch needed.
+    // Still load productImages for hero/featured/banner and legacy data
+    try {
+      const imgSnap = await getDocs(collection(db, 'productImages'));
+      imgSnap.forEach(d => {
+        const data = d.data();
+        if (d.id === '_featured') {
+          if (data.image) siteData.featured.image = data.image;
+        } else if (d.id === '_heroImg') {
+          if (data.image) { siteData.hero.heroImage = data.image; applyHeroImage(data.image); }
+        } else if (d.id === '_bannerImg') {
+          if (data.image) { siteData.hero.bannerImage = data.image; applyBannerImage(data.image); }
+        } else {
+          // Legacy: patch product image if not already set from product doc
+          const prod = siteData.products.find(p => String(p.id) === String(d.id));
+          if (prod && !prod.image && data.image) prod.image = data.image;
+        }
+      });
+    } catch(imgErr) {
+      console.warn('productImages collection unavailable (check Firestore rules):', imgErr);
+      // Not fatal — product images are now stored in the products collection itself
+    }
     // Load collection images
     const collSnap = await getDocs(collection(db, 'collectionImages'));
     collSnap.forEach(d => {
@@ -3367,8 +3427,16 @@ async function loadPublicDataFromFirebase() {
     renderRates();
     updateWishNavBadge();
   } catch(e) {
-    console.warn('Public data load error:', e);
-    // Fallback: show local defaults so the page isn't blank
+    console.error('Public data load error — details below:');
+    console.error('Code:', e.code, '| Message:', e.message);
+    if (e.code === 'permission-denied') {
+      console.error('⚠️ FIRESTORE RULES: Your security rules are blocking reads. Go to Firebase Console → Firestore → Rules and allow read: if true for products, productImages, siteConfig, collectionImages');
+      // Show the rules banner in admin panel if it exists
+      const banner = document.getElementById('firestoreRulesBanner');
+      if (banner) banner.style.display = 'block';
+      setFbStatus('error', 'rules');
+    }
+    // Fallback: show local defaults so the page is not blank
     renderProducts();
     renderCollections();
     renderRates();
@@ -3379,8 +3447,30 @@ async function loadPublicDataFromFirebase() {
   }
 }
 
+// ===== MIGRATE: seed default products to Firestore if collection is empty =====
+async function seedDefaultProductsIfNeeded() {
+  try {
+    const snap = await getDocs(collection(db, 'products'));
+    if (snap.empty) {
+      // No products in Firestore yet — seed the 4 defaults
+      const defaults = [
+        { name:'Celestial Solitaire Ring', type:'Ring', price:'₹42,000', hasImage: false, createdAt: serverTimestamp() },
+        { name:'Empress Gem Bangle', type:'Bangle', price:'₹28,500', hasImage: false, createdAt: serverTimestamp() },
+        { name:'Zara Drop Jhumkas', type:'Earrings', price:'₹15,200', hasImage: false, createdAt: serverTimestamp() },
+        { name:'Moonbeam Pendant Set', type:'Necklace', price:'₹56,800', hasImage: false, createdAt: serverTimestamp() }
+      ];
+      for (const p of defaults) {
+        await addDoc(collection(db, 'products'), p);
+      }
+      console.log('Seeded default products to Firestore');
+    }
+  } catch(e) {
+    console.warn('Seed check skipped:', e);
+  }
+}
+
 // ===== INIT — load Firebase data for ALL visitors before showing page =====
-loadPublicDataFromFirebase();
+seedDefaultProductsIfNeeded().then(() => loadPublicDataFromFirebase());
 
 // ===== COLLECTION IMAGES ADMIN =====
 function renderCollAdminGrid() {
